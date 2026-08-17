@@ -450,6 +450,46 @@ html, body { margin: 0; min-height: 100%; color: #111; }
 .footer-note { text-align: center; font-family: "Courier New", Courier, monospace; font-size: 11px; line-height: 1.45; letter-spacing: 0.02em; }
 `;
 
+    const GATE_TICKET_CSS = `
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; color: #111; }
+.photo-scene {
+  position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  padding: 56px 28px; overflow: hidden;
+  background: radial-gradient(circle at 28% 18%, rgba(255,255,255,0.07) 0%, transparent 38%),
+    radial-gradient(ellipse at 52% 68%, #35312e 0%, #24201d 42%, #12100f 100%);
+}
+.photo-scene::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 4px 4px; opacity: 0.45; pointer-events: none;
+}
+.photo-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 54%, rgba(0,0,0,0.34) 100%); pointer-events: none; }
+.photo-grain {
+  position: absolute; inset: -30%; opacity: 0.12; mix-blend-mode: soft-light; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+.photo-frame { position: relative; z-index: 1; transform: rotate(-1.1deg); filter: contrast(1.05) saturate(0.92) brightness(0.98); }
+.receipt-shadow { position: absolute; left: 10px; right: -8px; top: 14px; bottom: -16px; background: rgba(0,0,0,0.38); filter: blur(16px); transform: rotate(0.6deg); z-index: 0; }
+.gate-slip {
+  position: relative; z-index: 1; width: 312px;
+  background: linear-gradient(180deg, #b8d4e8 0%, #aac8de 50%, #9ebfd6 100%);
+  padding: 28px 20px 24px; border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 20px 36px rgba(0,0,0,0.26);
+  font-family: "Courier New", Courier, monospace; color: #0f1418; text-align: center;
+  text-shadow: 0 0 0.4px rgba(0,0,0,0.85);
+}
+.gate-title { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 8px; }
+.gate-chassis { font-size: 24px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 18px; }
+.gate-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+.gate-col-label { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.gate-col-value { font-size: 15px; font-weight: 700; }
+.gate-line { font-size: 13px; font-weight: 700; line-height: 1.45; margin-bottom: 10px; }
+.gate-stamp { margin-top: 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: #1a2228; }
+`;
+
     const FIELD_LABELS = {
       title: "Title",
       section_label: "Section label",
@@ -512,6 +552,9 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       legal_text: "Legal text",
       footer_note_line_1: "Footer note line 1",
       footer_note_line_2: "Footer note line 2",
+      total_rd_wt: "Total road weight",
+      instruction_01: "Instruction 01",
+      instruction_02: "Instruction 02",
     };
 
     const INTERCHANGE_DEFAULTS = {
@@ -631,6 +674,20 @@ html, body { margin: 0; min-height: 100%; color: #111; }
         render: renderScaleReceipt,
         filename: (d) => `scale_receipt_${d.container_number}.jpg`,
       },
+      gate_ticket: {
+        label: "Gate Ticket",
+        css: GATE_TICKET_CSS,
+        primary: ["container_number", "chsnbr", "total_rd_wt"],
+        defaults: {
+          chsnbr: "AIMZ475307",
+          container_number: "YANU4596221",
+          total_rd_wt: "32580",
+          instruction_01: "01 - Go Straight to (NN5 554 - J)",
+          instruction_02: "02 - PARK CHASSIS IN ZZ1 CHASSIS PIT",
+        },
+        render: renderGateTicket,
+        filename: (d) => `gate_ticket_${d.container_number}.jpg`,
+      },
     };
 
     const LONG_FIELDS = new Set([
@@ -674,6 +731,9 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       "reference",
       "gross_weight",
       "tare_weight_lb",
+      "total_rd_wt",
+      "instruction_01",
+      "instruction_02",
       "company_logo",
       "company_address_1",
       "company_address_2",
@@ -821,6 +881,10 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       return [String(terminal ?? "").toUpperCase(), "T E R M I N A L"];
     }
 
+    function formatWeightDisplay(value) {
+      return Math.round(parseNumber(value)).toLocaleString("en-US");
+    }
+
     function barcodeSvg(value, height = 54) {
       let bars = "";
       let x = 10;
@@ -904,6 +968,37 @@ html, body { margin: 0; min-height: 100%; color: #111; }
   <path d="M8 22 C34 30, 58 30, 92 22" stroke="#ff9900" stroke-width="3.2" fill="none" stroke-linecap="round"/>
   <polygon points="92,22 98,20 90,26" fill="#ff9900"/>
 </svg>`;
+    }
+
+    function renderGateTicket(data) {
+      const content = `
+<div class="gate-slip">
+  <div class="gate-title">CHASSIS NUMBER</div>
+  <div class="gate-chassis">${esc(data.chsnbr)}</div>
+  <div class="gate-columns">
+    <div>
+      <div class="gate-col-label">TOTAL RD WT</div>
+      <div class="gate-col-value">${esc(formatWeightDisplay(data.total_rd_wt))}</div>
+    </div>
+    <div>
+      <div class="gate-col-label">CONTAINER #</div>
+      <div class="gate-col-value">${esc(data.container_number)}</div>
+    </div>
+  </div>
+  <div class="gate-line">${esc(data.instruction_01)}</div>
+  <div class="gate-line">${esc(data.instruction_02)}</div>
+  <div class="gate-stamp">06/02/2026&nbsp;&nbsp;09:18 AM</div>
+</div>`;
+
+      return `
+<div class="photo-scene" id="capture-target">
+  <div class="photo-vignette" aria-hidden="true"></div>
+  <div class="photo-grain" aria-hidden="true"></div>
+  <div class="photo-frame">
+    <div class="receipt-shadow" aria-hidden="true"></div>
+    ${content}
+  </div>
+</div>`;
     }
 
     function renderScaleReceipt(data) {
