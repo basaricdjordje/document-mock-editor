@@ -221,6 +221,12 @@
       padding: 32px 24px !important;
     }
 
+    #preview-root .delivery-order-scene {
+      min-height: auto !important;
+      padding: 20px !important;
+      background: #d8d8d8 !important;
+    }
+
     #preview-root .handwritten {
       color: #1a4fd6;
     }
@@ -490,6 +496,52 @@ html, body { margin: 0; min-height: 100%; color: #111; }
 .gate-stamp { margin-top: 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: #1a2228; }
 `;
 
+    const DELIVERY_ORDER_CSS = `
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; color: #111; }
+.delivery-order-scene {
+  position: relative; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px; background: #d0d0d0;
+}
+.delivery-order-page {
+  width: 210mm; min-height: 297mm; max-width: 794px; background: #fff; color: #111;
+  padding: 10mm 8mm 8mm; font-family: Arial, Helvetica, sans-serif; font-size: 8.5px; line-height: 1.35;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+}
+.do-top { display: grid; grid-template-columns: 1fr 2fr 1fr; align-items: start; margin-bottom: 6px; }
+.do-top-center { text-align: center; }
+.do-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.02em; }
+.do-company { margin-top: 2px; font-size: 11px; font-weight: 600; }
+.do-top-right { text-align: right; font-size: 10px; line-height: 1.5; }
+.do-top-right strong { font-size: 11px; }
+.do-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.do-table td { border: 1px solid #111; vertical-align: top; padding: 0; }
+.do-label {
+  background: #d9d9d9; font-size: 8px; font-weight: 700; text-align: center;
+  padding: 3px 4px; border-bottom: 1px solid #111; letter-spacing: 0.02em;
+}
+.do-content { padding: 5px 6px; min-height: 34px; font-size: 8.5px; line-height: 1.35; white-space: pre-wrap; }
+.do-content.tall { min-height: 58px; }
+.do-content.short { min-height: 24px; }
+.do-ref-row { display: grid; grid-template-columns: 72px 8px 1fr; gap: 0; margin-bottom: 1px; font-size: 8.5px; }
+.do-ref-label { text-align: left; }
+.do-ref-colon { text-align: center; }
+.do-special .do-content { min-height: 28px; font-size: 8px; }
+.do-items { width: 100%; border-collapse: collapse; margin-top: 0; table-layout: fixed; }
+.do-items th, .do-items td { border: 1px solid #111; padding: 4px 3px; font-size: 8px; text-align: center; vertical-align: middle; }
+.do-items th { background: #d9d9d9; font-weight: 700; }
+.do-items td.left { text-align: left; padding-left: 5px; }
+.do-items .totals td { font-weight: 700; }
+.do-col-pcs { width: 7%; }
+.do-col-type { width: 7%; }
+.do-col-wght { width: 12%; }
+.do-col-nmfc { width: 8%; }
+.do-col-hz { width: 5%; }
+.do-col-item { width: 10%; }
+.do-col-desc { width: 36%; }
+.do-col-class { width: 8%; }
+`;
+
     const FIELD_LABELS = {
       title: "Title",
       section_label: "Section label",
@@ -555,6 +607,25 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       total_rd_wt: "Total road weight",
       instruction_01: "Instruction 01",
       instruction_02: "Instruction 02",
+      bol: "BOL #",
+      pickup_date: "Pickup date",
+      company_name: "Company name",
+      freight_charges_to: "Send freight charges to",
+      accounting_reference: "Accounting reference",
+      freight_terms: "Freight terms",
+      load_id: "Load ID",
+      shipment_id: "Shipment ID",
+      division: "Division",
+      shipper_block: "Shipper",
+      consignee_block: "Consignee",
+      origin_terminal: "Origin terminal",
+      destination_terminal: "Destination terminal",
+      special_instructions: "Special instructions",
+      item_pcs: "Item PCS",
+      item_type: "Item type",
+      item_weight: "Item weight",
+      item_description: "Item description",
+      item_class: "Item class",
     };
 
     const INTERCHANGE_DEFAULTS = {
@@ -688,16 +759,48 @@ html, body { margin: 0; min-height: 100%; color: #111; }
         render: renderGateTicket,
         filename: (d) => `gate_ticket_${d.container_number}.jpg`,
       },
+      delivery_order: {
+        label: "Delivery Order",
+        css: DELIVERY_ORDER_CSS,
+        primary: ["container_number", "bol", "pickup_date", "shipper_block", "consignee_block"],
+        defaults: {
+          company_name: "Road Logistics",
+          bol: "10373086",
+          pickup_date: "05/22/2024",
+          freight_charges_to: "KUEHNE + NAGEL INC-JERSEY CITY\n10 EXCHANGE PLACE\nJERSEY CITY, NJ 07302",
+          accounting_reference: "R003329332-6262\n*Include tracking numbers on all communications",
+          freight_terms: "3RD PARTY PREPAID",
+          container_number: "FCIU7292516",
+          load_id: "10373086",
+          shipment_id: "15953961",
+          division: "US63",
+          shipper_block: "WEST BASIN CONTAINER TERMINAL LLC\n2050 JOHN S GIBSON BLVD\nSAN PEDRO, CA 90731-1506",
+          consignee_block: "WHIPLASH\n19801 SANTA FE\nCOMPTON, CA 90221",
+          origin_terminal: "",
+          destination_terminal: "",
+          special_instructions: "[#TN#1058374885 #DEL] Nidec Automotive Motor Americas Llc | DELIVERY COVER NOTE | B/L: HLCUSZX2404AQLR5 | FCIU7292516 40HC",
+          item_pcs: "42",
+          item_type: "PLT",
+          item_weight: "18055.859 lb",
+          item_description: "FCIU7292516",
+          item_class: "70.0",
+        },
+        render: renderDeliveryOrder,
+        filename: (d) => `delivery_order_${d.container_number}.jpg`,
+      },
     };
 
     const LONG_FIELDS = new Set([
       "legal_notice", "legal_certify", "legal_note", "legal_steamship", "instructions", "doc_title", "legal_text",
+      "special_instructions", "shipper_block", "consignee_block", "freight_charges_to", "accounting_reference",
     ]);
 
     // Shared field order across document types — most common fields first.
     const FIELD_ORDER = [
       "container_number",
       "date",
+      "pickup_date",
+      "bol",
       "time",
       "time_in",
       "time_out",
@@ -708,6 +811,10 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       "deliver_to",
       "origin",
       "destination",
+      "shipper_block",
+      "consignee_block",
+      "origin_terminal",
+      "destination_terminal",
       "price",
       "driver",
       "seal",
@@ -734,6 +841,19 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       "total_rd_wt",
       "instruction_01",
       "instruction_02",
+      "load_id",
+      "shipment_id",
+      "division",
+      "company_name",
+      "freight_charges_to",
+      "accounting_reference",
+      "freight_terms",
+      "special_instructions",
+      "item_pcs",
+      "item_type",
+      "item_weight",
+      "item_description",
+      "item_class",
       "company_logo",
       "company_address_1",
       "company_address_2",
@@ -881,6 +1001,25 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       return [String(terminal ?? "").toUpperCase(), "T E R M I N A L"];
     }
 
+    function multilineHtml(text) {
+      return String(text ?? "")
+        .split(/\r?\n/)
+        .map((line) => esc(line))
+        .join("<br />");
+    }
+
+    function refRow(label, value) {
+      return `<div class="do-ref-row"><span class="do-ref-label">${esc(label)}</span><span class="do-ref-colon">:</span><span class="do-ref-value">${esc(value)}</span></div>`;
+    }
+
+    function parseWeightNumber(value) {
+      return parseNumber(String(value ?? "").replace(/\s*lb\s*$/i, ""));
+    }
+
+    function formatWeightTotal(value) {
+      return parseWeightNumber(value).toFixed(2);
+    }
+
     function formatWeightDisplay(value) {
       return Math.round(parseNumber(value)).toLocaleString("en-US");
     }
@@ -968,6 +1107,122 @@ html, body { margin: 0; min-height: 100%; color: #111; }
   <path d="M8 22 C34 30, 58 30, 92 22" stroke="#ff9900" stroke-width="3.2" fill="none" stroke-linecap="round"/>
   <polygon points="92,22 98,20 90,26" fill="#ff9900"/>
 </svg>`;
+    }
+
+    function renderDeliveryOrder(data) {
+      const weightTotal = formatWeightTotal(data.item_weight);
+      const content = `
+<div class="delivery-order-page">
+  <div class="do-top">
+    <div></div>
+    <div class="do-top-center">
+      <h1 class="do-title">DELIVERY ORDER</h1>
+      <div class="do-company">${esc(data.company_name)}</div>
+    </div>
+    <div class="do-top-right">
+      <div><strong>BOL:</strong> ${esc(data.bol)}</div>
+      <div>Pickup Date: ${esc(data.pickup_date)}</div>
+    </div>
+  </div>
+
+  <table class="do-table">
+    <tr>
+      <td rowspan="2" style="width:22%">
+        <div class="do-label">ACCESSORIALS</div>
+        <div class="do-content tall"></div>
+      </td>
+      <td style="width:39%">
+        <div class="do-label">SEND FREIGHT CHARGES TO</div>
+        <div class="do-content">${multilineHtml(data.freight_charges_to)}</div>
+      </td>
+      <td style="width:39%">
+        <div class="do-label">ACCOUNTING REFERENCE</div>
+        <div class="do-content">${multilineHtml(data.accounting_reference)}</div>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <div class="do-label">FREIGHT TERMS</div>
+        <div class="do-content short">${esc(data.freight_terms)}</div>
+      </td>
+      <td>
+        <div class="do-label">REFERENCES</div>
+        <div class="do-content">
+          ${refRow("Container #", data.container_number)}
+          ${refRow("LoadID", data.load_id)}
+          ${refRow("ShipmentID", data.shipment_id)}
+          ${refRow("Status Check", "true")}
+          ${refRow("Division", data.division)}
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <div class="do-label">SHIPPER</div>
+        <div class="do-content">${multilineHtml(data.shipper_block)}</div>
+      </td>
+      <td>
+        <div class="do-label">ORIGIN TERMINAL</div>
+        <div class="do-content short">${esc(data.origin_terminal)}</div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <div class="do-label">CONSIGNEE</div>
+        <div class="do-content">${multilineHtml(data.consignee_block)}</div>
+      </td>
+      <td>
+        <div class="do-label">DESTINATION TERMINAL</div>
+        <div class="do-content short">${esc(data.destination_terminal)}</div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" class="do-special">
+        <div class="do-label">SPECIAL INSTRUCTIONS</div>
+        <div class="do-content">${esc(data.special_instructions)}</div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="do-items">
+    <thead>
+      <tr>
+        <th class="do-col-pcs">PCS</th>
+        <th class="do-col-type">TYPE</th>
+        <th class="do-col-wght">WGHT</th>
+        <th class="do-col-nmfc">NMFC</th>
+        <th class="do-col-hz">HZ</th>
+        <th class="do-col-item">ITEM ID</th>
+        <th class="do-col-desc">DESCRIPTION</th>
+        <th class="do-col-class">CLASS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${esc(data.item_pcs)}</td>
+        <td>${esc(data.item_type)}</td>
+        <td>${esc(data.item_weight)}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="left">${esc(data.item_description)}</td>
+        <td>${esc(data.item_class)}</td>
+      </tr>
+      <tr class="totals">
+        <td>${esc(data.item_pcs)}</td>
+        <td></td>
+        <td>${esc(weightTotal)}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td class="left">TOTALS</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>`;
+
+      return `<div class="delivery-order-scene" id="capture-target">${content}</div>`;
     }
 
     function renderGateTicket(data) {
