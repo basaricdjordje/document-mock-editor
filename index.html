@@ -99,6 +99,21 @@
       border-top: 1px solid var(--border);
     }
 
+    .mode-switch {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 4px 0 16px;
+    }
+
+    .mode-switch[hidden] { display: none; }
+
+    .mode-switch__hint {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
     .fields-section__title {
       margin: 0 0 14px;
       font-size: 0.78rem;
@@ -222,6 +237,7 @@
     }
 
     #preview-root .delivery-order-scene,
+    #preview-root .bol-scene,
     #preview-root .invoice-scene {
       min-height: auto !important;
       padding: 20px !important;
@@ -253,6 +269,10 @@
       </div>
 
       <div class="fields-section">
+        <div class="mode-switch" id="mode-switch" hidden>
+          <button type="button" id="toggle-pod" class="btn-secondary">BOL &rarr; POD</button>
+          <span class="mode-switch__hint" id="mode-hint"></span>
+        </div>
         <div class="fields-section__title">Fields</div>
         <div id="fields"></div>
       </div>
@@ -598,6 +618,87 @@ html, body { margin: 0; min-height: 100%; color: #111; }
 .payment-option p { margin: 0; font-size: 13px; line-height: 1.55; }
 `;
 
+    const BOL_CSS = `
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; color: #111; }
+.bol-scene {
+  position: relative; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+  padding: 24px; background: #d0d0d0;
+}
+.bol-page {
+  width: 816px; min-width: 816px; background: #fff; color: #000;
+  padding: 20px 22px 24px; font-family: Arial, Helvetica, sans-serif; font-size: 10px; line-height: 1.3;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+}
+.bol-frame { border: 1.4px solid #000; }
+.bol-hand {
+  font-family: "Segoe Script", "Bradley Hand", "Apple Chancery", "Brush Script MT", cursive;
+  font-size: 1.55em; line-height: 1; font-weight: 500; color: #16181d;
+}
+.bol-key { font-weight: 700; }
+.bol-em { font-style: italic; font-weight: 700; }
+
+.bol-hdr { display: grid; grid-template-columns: 1fr 1.5fr 1fr; border-bottom: 1.4px solid #000; }
+.bol-hdr > div { padding: 5px 8px; font-weight: 700; font-style: italic; }
+.bol-hdr-title { text-align: center; font-size: 17px; font-style: normal; letter-spacing: 0.01em; }
+.bol-hdr-page { text-align: right; }
+
+.bol-main { display: grid; grid-template-columns: 1fr 1fr; }
+.bol-main > .bol-col + .bol-col { border-left: 1.4px solid #000; }
+.bol-bar {
+  background: #454f5b; color: #fff; text-align: center; font-weight: 700; font-style: italic;
+  font-size: 11px; letter-spacing: 0.05em; padding: 4px 6px; border-bottom: 1px solid #000; border-top: 1px solid #000;
+}
+.bol-col > .bol-bar:first-child { border-top: none; }
+.bol-line { padding: 4px 8px; border-bottom: 1px solid #000; min-height: 20px; }
+.bol-line.tall { min-height: 28px; }
+.bol-col > .bol-line:last-child { border-bottom: none; }
+.bol-terms { display: flex; align-items: center; gap: 26px; padding: 7px 10px; font-weight: 700; }
+.bol-check-item { display: inline-flex; align-items: center; gap: 6px; }
+.bol-box {
+  display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px;
+  border: 1.2px solid #000; font-size: 11px; font-weight: 700; line-height: 1; flex-shrink: 0;
+}
+
+.bol-special { border-top: 1.4px solid #000; padding: 5px 8px 44px; }
+.bol-special__label { font-weight: 700; font-style: italic; margin-bottom: 2px; }
+.bol-special__text { font-size: 9px; line-height: 1.45; }
+
+.bol-table { width: 100%; border-collapse: collapse; table-layout: fixed; border-top: 1.4px solid #000; }
+.bol-table th, .bol-table td { border: 1px solid #000; padding: 4px 6px; font-size: 9px; vertical-align: middle; }
+.bol-table th { background: #c9ced6; font-weight: 700; font-style: italic; text-align: center; }
+.bol-table td.shade { background: #c9ced6; }
+.bol-table td.blank { border-left: none; border-right: none; background: #c9ced6; }
+.bol-table td.center { text-align: center; }
+.bol-table td.right { text-align: right; }
+.bol-table td.total { font-weight: 700; font-style: italic; }
+.bol-table tr.empty td { height: 21px; }
+.bol-commodity th { height: 34px; }
+.bol-commodity td { height: 21px; }
+
+.bol-legal { padding: 6px 8px; font-size: 6.6px; line-height: 1.42; text-align: justify; border-top: 1.4px solid #000; }
+.bol-legal p { margin: 0 0 5px; }
+.bol-legal p:last-child { margin-bottom: 0; }
+
+.bol-note { display: grid; grid-template-columns: 1fr 1fr; border-top: 1.4px solid #000; }
+.bol-note__left { display: grid; grid-template-columns: 44px 1fr; border-right: 1.4px solid #000; padding: 6px 8px; gap: 8px; }
+.bol-note__tag { font-size: 8px; font-weight: 700; font-style: italic; }
+.bol-note__body { font-size: 7.4px; line-height: 1.5; }
+.bol-fill { display: inline-block; border-bottom: 1px solid #000; min-width: 118px; text-align: center; }
+.bol-note__right { display: flex; flex-direction: column; }
+.bol-pod-blank { flex: 1; min-height: 58px; }
+.bol-pod-date { padding: 3px 8px 6px; text-align: center; font-weight: 700; font-style: italic; font-size: 9px; }
+
+.bol-sign { display: grid; grid-template-columns: 1fr 1fr; border-top: 1.4px solid #000; }
+.bol-sign__col + .bol-sign__col { border-left: 1.4px solid #000; }
+.bol-sign__text { padding: 5px 8px; font-size: 7.2px; line-height: 1.45; min-height: 46px; }
+.bol-sign__row { display: grid; grid-template-columns: 1fr 120px; align-items: flex-end; gap: 10px; padding: 0 8px 6px; min-height: 52px; }
+.bol-sign__value { border-bottom: 1px solid #000; min-height: 30px; display: flex; align-items: flex-end; padding-bottom: 1px; }
+.bol-sign__date { font-weight: 700; font-style: italic; font-size: 9px; display: flex; align-items: flex-end; gap: 5px; }
+.bol-sign__date .bol-hand { font-size: 1.35em; }
+.bol-sign__date-line { border-bottom: 1px solid #000; flex: 1; min-height: 15px; padding: 0 2px; }
+`;
+
     const FIELD_LABELS = {
       title: "Title",
       section_label: "Section label",
@@ -703,6 +804,29 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       ship_to_name: "Ship to name",
       ship_to_address_1: "Ship to address 1",
       ship_to_address_2: "Ship to address 2",
+      page_label: "Page label",
+      bol_number: "Bill of lading #",
+      reference_number: "Reference #",
+      ship_from_name: "Ship from name",
+      ship_from_street: "Ship from street",
+      ship_from_city: "Ship from city/state/zip",
+      ship_from_contact: "Ship from contact",
+      pickup_time: "Pickup time",
+      ship_to_street: "Ship to street",
+      ship_to_city: "Ship to city/state/zip",
+      ship_to_contact: "Ship to contact",
+      delivery_time: "Delivery time",
+      bill_to_street: "Bill to street",
+      bill_to_city: "Bill to city/state/zip",
+      carrier_name: "Carrier name",
+      tractor_number: "Tractor #",
+      trailer_number: "Trailer #",
+      scac: "SCAC",
+      declared_value: "Declared value ($)",
+      shipper_signature: "Shipper signature",
+      shipper_sign_date: "Shipper signature date",
+      carrier_signature: "Carrier signature",
+      carrier_pickup_date: "Carrier pickup date",
     };
 
     const INTERCHANGE_DEFAULTS = {
@@ -755,7 +879,7 @@ html, body { margin: 0; min-height: 100%; color: #111; }
         filename: (d) => `interchange_in_${d.container_number}.jpg`,
       },
       pod: {
-        label: "POD (Bill of Lading)",
+        label: "POD (Bill of Lading) — NEXT",
         hint: "Straight bill of lading",
         css: POD_CSS,
         primary: ["container_number", "date", "pick_up_from", "deliver_to", "time_in", "time_out"],
@@ -901,6 +1025,80 @@ html, body { margin: 0; min-height: 100%; color: #111; }
         render: renderInvoice,
         filename: (d) => `invoice_${d.container_number}.jpg`,
       },
+      bill_of_lading: {
+        label: "Bill of Lading / POD",
+        hint: "VICS BOL — sign it to make it a POD",
+        css: BOL_CSS,
+        primary: ["ship_from_name", "ship_to_name", "shipment_number", "carrier_name"],
+        podToggle: true,
+        podFields: ["shipper_signature", "shipper_sign_date", "carrier_signature", "carrier_pickup_date"],
+        fieldOrder: [
+          "ship_from_name",
+          "ship_to_name",
+          "shipment_number",
+          "carrier_name",
+          "shipper_signature",
+          "shipper_sign_date",
+          "carrier_signature",
+          "carrier_pickup_date",
+          "date",
+          "bol_number",
+          "reference_number",
+          "po_number",
+          "page_label",
+          "ship_from_street",
+          "ship_from_city",
+          "ship_from_contact",
+          "pickup_time",
+          "ship_to_street",
+          "ship_to_city",
+          "ship_to_contact",
+          "delivery_time",
+          "bill_to_name",
+          "bill_to_street",
+          "bill_to_city",
+          "tractor_number",
+          "trailer_number",
+          "seal_number",
+          "scac",
+          "freight_terms",
+          "declared_value",
+        ],
+        defaults: {
+          date: "04/07/2023",
+          page_label: "Page 1 of 1",
+          bol_number: "B0212625",
+          shipment_number: "T0266057",
+          po_number: "",
+          reference_number: "MRSU5824067SHP2302-713570",
+          ship_from_name: "QX- BOYLE",
+          ship_from_street: "5801 South Boyle Avenue",
+          ship_from_city: "Vernon, CA 90058",
+          ship_from_contact: "dispatch (213) 463-8113",
+          pickup_time: "04/12/2023 11:00AM - 11:00AM (PST)",
+          ship_to_name: "Tesla EMPIRE",
+          ship_to_street: "111 Empire Boulevard",
+          ship_to_city: "Pattison, TX 77423",
+          ship_to_contact: "dispatch (213) 463-8113",
+          delivery_time: "04/14/2023 03:00PM - 03:00PM (CST)",
+          bill_to_name: "NEXT Trucking, Inc.",
+          bill_to_street: "2383 Utah Ave Ste 108",
+          bill_to_city: "El Segundo, CA 90245",
+          carrier_name: "Janns Logistic",
+          tractor_number: "",
+          trailer_number: "IBL 038",
+          seal_number: "0448939",
+          scac: "",
+          freight_terms: "3rd party",
+          declared_value: "100,000",
+          shipper_signature: "Evelyn M.",
+          shipper_sign_date: "04/12/23",
+          carrier_signature: "Jose Salas",
+          carrier_pickup_date: "4-12-2023",
+        },
+        render: renderBillOfLading,
+        filename: (d) => `${state.podMode ? "pod" : "bill_of_lading"}_${d.shipment_number}.jpg`,
+      },
     };
 
     const LONG_FIELDS = new Set([
@@ -1006,6 +1204,17 @@ html, body { margin: 0; min-height: 100%; color: #111; }
 
     const FIELD_ORDER_INDEX = new Map(FIELD_ORDER.map((key, index) => [key, index]));
 
+    // Document types can override the shared ordering with their own field list.
+    function makeFieldComparator(order) {
+      const index = new Map(order.map((key, position) => [key, position]));
+      return (a, b) => {
+        const aOrder = index.has(a) ? index.get(a) : 9999;
+        const bOrder = index.has(b) ? index.get(b) : 9999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return a.localeCompare(b);
+      };
+    }
+
     function compareFieldKeys(a, b) {
       const aOrder = FIELD_ORDER_INDEX.has(a) ? FIELD_ORDER_INDEX.get(a) : 9999;
       const bOrder = FIELD_ORDER_INDEX.has(b) ? FIELD_ORDER_INDEX.get(b) : 9999;
@@ -1013,10 +1222,25 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       return a.localeCompare(b);
     }
 
+    // Pod-mode signature fields join the always-visible primary fields.
+    function getPrimaryKeys(config) {
+      const podFields = config.podFields || [];
+      const podActive = Boolean(config.podToggle && state.podMode);
+      return [...config.primary, ...(podActive ? podFields : [])];
+    }
+
     function getFormFieldKeys(config) {
-      const primarySet = new Set(config.primary);
-      const allKeys = Object.keys(config.defaults).sort(compareFieldKeys);
-      const primary = config.primary.filter((key) => allKeys.includes(key));
+      const podFields = config.podFields || [];
+      const podActive = Boolean(config.podToggle && state.podMode);
+      const primaryKeys = getPrimaryKeys(config);
+      const primarySet = new Set(primaryKeys);
+      const compare = config.fieldOrder
+        ? makeFieldComparator(config.fieldOrder)
+        : compareFieldKeys;
+      const allKeys = Object.keys(config.defaults)
+        .filter((key) => podActive || !podFields.includes(key))
+        .sort(compare);
+      const primary = primaryKeys.filter((key) => allKeys.includes(key));
       const advanced = allKeys.filter((key) => !primarySet.has(key));
       return [...primary, ...advanced];
     }
@@ -1662,7 +1886,186 @@ html, body { margin: 0; min-height: 100%; color: #111; }
 </div>`;
     }
 
-    const state = { docType: "interchange_out" };
+    // Static blocks of the BOL form — pre-printed text that never changes.
+    const BOL_SPECIAL_INSTRUCTIONS =
+      "** SOLO LOAD** SOLO LOAD*** LOAD BARS AND STRAPS REQUIRED ** / 53 FOOT DRY VAN NEEDE / MUST TRACK ON NEXT APP 100% / DELV APPT STRICT 4/14 @ 1500 ( LATE DELIVERY WILL RESULT IN $500 DEDUCTION) FAILURE TO TRACK WILL REUSLT IN $250 DEDUCTION -";
+    const BOL_ORDER_NUMBER = "MRSU5824067SHP2302-713570";
+    const BOL_ORDER_WEIGHT = "30,000.00";
+    const BOL_HANDLING_UNITS = "48 PLT";
+    const BOL_TOTAL_HANDLING = "48 pallets .";
+    const BOL_COMMODITY = "GENERAL -";
+
+    function bolCheckbox(checked, label) {
+      return `<span class="bol-check-item"><span class="bol-box">${checked ? "&#10003;" : ""}</span>${esc(label)}</span>`;
+    }
+
+    function bolEmptyRows(count, columns) {
+      let rows = "";
+      for (let i = 0; i < count; i += 1) {
+        rows += `<tr class="empty">${"<td></td>".repeat(columns)}</tr>`;
+      }
+      return rows;
+    }
+
+    function renderBillOfLading(data, mode) {
+      const isPod = mode === "pod";
+      const terms = String(data.freight_terms ?? "").toLowerCase();
+      const hand = (value) => (value ? `<span class="bol-hand">${esc(value)}</span>` : "");
+
+      const content = `
+<div class="bol-page">
+  <div class="bol-frame">
+    <div class="bol-hdr">
+      <div><span class="bol-key">DATE:</span> ${esc(data.date)}</div>
+      <div class="bol-hdr-title">BILL OF LADING</div>
+      <div class="bol-hdr-page">${esc(data.page_label)}</div>
+    </div>
+
+    <div class="bol-main">
+      <div class="bol-col">
+        <div class="bol-bar">SHIP FROM (ORIGIN)</div>
+        <div class="bol-line"><span class="bol-key">NAME:</span> ${esc(data.ship_from_name)}</div>
+        <div class="bol-line"><span class="bol-key">STREET:</span> ${esc(data.ship_from_street)}</div>
+        <div class="bol-line"><span class="bol-key">CITY/STATE/ZIP:</span> ${esc(data.ship_from_city)}</div>
+        <div class="bol-line"><span class="bol-key">CONTACT:</span> ${esc(data.ship_from_contact)}</div>
+        <div class="bol-line"><span class="bol-key">PICKUP TIME:</span> ${esc(data.pickup_time)}</div>
+        <div class="bol-bar">SHIP TO (DESTINATION)</div>
+        <div class="bol-line"><span class="bol-key">NAME:</span> ${esc(data.ship_to_name)}</div>
+        <div class="bol-line"><span class="bol-key">STREET:</span> ${esc(data.ship_to_street)}</div>
+        <div class="bol-line"><span class="bol-key">CITY/STATE/ZIP:</span> ${esc(data.ship_to_city)}</div>
+        <div class="bol-line"><span class="bol-key">CONTACT:</span> ${esc(data.ship_to_contact)}</div>
+        <div class="bol-line"><span class="bol-key">DELIVERY TIME:</span> ${esc(data.delivery_time)}</div>
+        <div class="bol-bar">BILL TO (THIRD PARTY)</div>
+        <div class="bol-line"><span class="bol-key">NAME:</span> ${esc(data.bill_to_name)}</div>
+        <div class="bol-line"><span class="bol-key">STREET:</span> ${esc(data.bill_to_street)}</div>
+        <div class="bol-line"><span class="bol-key">CITY/STATE/ZIP:</span> ${esc(data.bill_to_city)}</div>
+      </div>
+
+      <div class="bol-col">
+        <div class="bol-line"><span class="bol-key">Bill of Lading Number:</span> &nbsp;${esc(data.bol_number)}</div>
+        <div class="bol-line"><span class="bol-key">Shipment Number:</span> &nbsp;${esc(data.shipment_number)}</div>
+        <div class="bol-line"><span class="bol-key">Reference Number(s)</span></div>
+        <div class="bol-line"><span class="bol-em">P.O.#:</span> ${esc(data.po_number)}</div>
+        <div class="bol-line"><span class="bol-em">Reference#:</span> &nbsp;${esc(data.reference_number)}</div>
+        <div class="bol-line"><span class="bol-em">Reference#:</span></div>
+        <div class="bol-line"><span class="bol-em">Reference#:</span></div>
+        <div class="bol-line tall"><span class="bol-key">CARRIER NAME:</span> ${hand(data.carrier_name)}</div>
+        <div class="bol-line tall"><span class="bol-key">TRACTOR#:</span> ${hand(data.tractor_number)}</div>
+        <div class="bol-line tall"><span class="bol-key">TRAILER#:</span> ${hand(data.trailer_number)}</div>
+        <div class="bol-line tall"><span class="bol-key">SEAL#:</span> ${hand(data.seal_number)}</div>
+        <div class="bol-line tall"><span class="bol-key">SCAC:</span> ${hand(data.scac)}</div>
+        <div class="bol-bar">FREIGHT CHARGE TERMS</div>
+        <div class="bol-line bol-terms">
+          ${bolCheckbox(terms.includes("collect"), "COLLECT")}
+          ${bolCheckbox(terms.includes("prepaid"), "PREPAID")}
+          ${bolCheckbox(terms.includes("3rd") || terms.includes("third"), "3RD PARTY")}
+        </div>
+        <div class="bol-line bol-terms">
+          ${bolCheckbox(false, "Master BOL (Multiple Stops) - with attached underlying BOLs")}
+        </div>
+      </div>
+    </div>
+
+    <div class="bol-special">
+      <div class="bol-special__label">SPECIAL INSTRUCTIONS:</div>
+      <div class="bol-special__text">${esc(BOL_SPECIAL_INSTRUCTIONS)}</div>
+    </div>
+
+    <table class="bol-table">
+      <tr>
+        <th style="width:26%">CUSTOMER ORDER NUMBER</th>
+        <th style="width:9%">#PKGS</th>
+        <th style="width:17%">WEIGHT (LBS)</th>
+        <td class="shade" colspan="3"></td>
+      </tr>
+      <tr>
+        <td class="shade center">${esc(BOL_ORDER_NUMBER)}</td>
+        <td class="shade"></td>
+        <td class="shade center">${esc(BOL_ORDER_WEIGHT)}</td>
+        <td class="shade" colspan="3"></td>
+      </tr>
+      <tr>
+        <td class="shade"></td>
+        <td class="shade"></td>
+        <td class="shade"></td>
+        <td class="total" colspan="2" style="width:31%">Total Package Pieces:</td>
+        <td class="total" style="width:17%">Total Weight: &nbsp;${esc(BOL_ORDER_WEIGHT)}</td>
+      </tr>
+    </table>
+
+    <table class="bol-table bol-commodity">
+      <tr>
+        <th style="width:13%">HANDLING UNITS<br />NO. TYPE</th>
+        <th style="width:12%">PACKAGE<br />NO. TYPE</th>
+        <th style="width:7%">HAZ<br />MAT</th>
+        <th style="width:38%">KIND OF PACKAGING, COMMODITY DESCRIPTION,<br />SPECIAL MARKS AND EXCEPTIONS</th>
+        <th style="width:12%">WEIGHT<br />(LBS)</th>
+        <th style="width:9%">NMFC#</th>
+        <th style="width:9%">CLASS</th>
+      </tr>
+      <tr>
+        <td class="bol-hand">${esc(BOL_HANDLING_UNITS)}</td>
+        <td></td>
+        <td></td>
+        <td class="center">${esc(BOL_COMMODITY)}</td>
+        <td class="center">${esc(BOL_ORDER_WEIGHT)}</td>
+        <td></td>
+        <td></td>
+      </tr>
+      ${bolEmptyRows(4, 7)}
+      <tr>
+        <td class="total" colspan="3">Total Handling Pieces: <span class="bol-hand">${esc(BOL_TOTAL_HANDLING)}</span></td>
+        <td class="total">Total Package Pieces:</td>
+        <td class="total" colspan="3">Total Weight: &nbsp;${esc(BOL_ORDER_WEIGHT)}</td>
+      </tr>
+    </table>
+
+    <div class="bol-legal">
+      <p>RECEIVED, subject to individually determined rates or contracts that have been agreed upon in writing between the carrier and shipper, if applicable, otherwise to the rates, classifications and rules that have been established by the carrier and are available to the shipper, on request, and to all applicable state and federal regulations.</p>
+      <p>Under 49 U.S.C. section 14706(c)(1)(A)(B) and the terms and conditions set forth on the reverse side of this Bill of Lading to the Customer may be limited. The Carrier has established and offered alternative rates of freight for the Carriage and the Customer acknowledges that it has made an election between those alternative rates, between (A) the Carrier's regular/lower rates for the Carriage and (B) ad valorem rates for goods not so limited, which rates are dependent on the value declared by the Customer. Unless the Customer declares the nature and value of the Goods prior to the Carriage, sets forth the same on this front page of this Bill of Lading, and pays the corresponding ad valorem rate, the Customer knowingly and willingly elects to ship under the Carrier's regular/lower rates, the consequence of which is that in no event shall the Carrier be or become liable for any loss of or damage to or in connection with the Carriage of the Goods in an amount exceeding the lesser of $.50 per pound or $50.</p>
+    </div>
+
+    <div class="bol-note">
+      <div class="bol-note__left">
+        <div class="bol-note__tag">NOTE</div>
+        <div class="bol-note__body">
+          Where the rate is dependant on value, shippers are required to state specifically in writing the agreed or declared value of the property as follows:<br /><br />
+          The agreed or declared value of the property is specifically stated by the shipper to be not exceeding $ <span class="bol-fill">${esc(data.declared_value)}</span> per <span class="bol-fill"></span><br /><br />
+          Excess liability coverage requested $ <span class="bol-fill"></span>
+        </div>
+      </div>
+      <div class="bol-note__right">
+        <div class="bol-bar">PROOF OF DELIVERY SIGNATURE &amp; DATE</div>
+        <div class="bol-pod-blank"></div>
+        <div class="bol-pod-date">Date:</div>
+      </div>
+    </div>
+
+    <div class="bol-sign">
+      <div class="bol-sign__col">
+        <div class="bol-bar">SHIPPER SIGNATURE &amp; DATE</div>
+        <div class="bol-sign__text">This is to certify that the named materials above are properly classified, packaged, marked and labeled, and are in proper condition for transportation according to the applicable regulations of the Department of Transportation.</div>
+        <div class="bol-sign__row">
+          <div class="bol-sign__value">${isPod ? hand(data.shipper_signature) : ""}</div>
+          <div class="bol-sign__date">Date: <span class="bol-sign__date-line">${isPod ? hand(data.shipper_sign_date) : ""}</span></div>
+        </div>
+      </div>
+      <div class="bol-sign__col">
+        <div class="bol-bar">CARRIER SIGNATURE &amp; PICKUP DATE</div>
+        <div class="bol-sign__text">Carrier acknowledges receipt of packages and required placards. Carrier certifies emergency response information was made available and/ or carrier has the DOT emergency response guidebook or equivalent document in the vehicle.</div>
+        <div class="bol-sign__row">
+          <div class="bol-sign__value">${isPod ? hand(data.carrier_signature) : ""}</div>
+          <div class="bol-sign__date">Date: <span class="bol-sign__date-line">${isPod ? hand(data.carrier_pickup_date) : ""}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+
+      return `<div class="bol-scene" id="capture-target">${content}</div>`;
+    }
+
+    const state = { docType: "interchange_out", podMode: false };
 
     function currentConfig() {
       return DOCUMENT_TYPES[state.docType];
@@ -1685,8 +2088,9 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       fieldsEl.innerHTML = "";
 
       const keys = getFormFieldKeys(config);
+      const primarySet = new Set(getPrimaryKeys(config));
       for (const key of keys) {
-        const isPrimary = config.primary.includes(key);
+        const isPrimary = primarySet.has(key);
         const group = document.createElement("div");
         group.className = `field-group${isPrimary ? "" : " advanced"}`;
         if (!isPrimary && showAdvanced) {
@@ -1723,12 +2127,15 @@ html, body { margin: 0; min-height: 100%; color: #111; }
       const config = currentConfig();
       document.getElementById("document-styles").textContent = config.css;
       const values = getValues();
-      document.getElementById("preview-root").innerHTML = config.render(values);
+      const mode = config.podToggle && state.podMode ? "pod" : "bol";
+      document.getElementById("preview-root").innerHTML = config.render(values, mode);
     }
 
     function setDocType(docType) {
       state.docType = docType;
+      state.podMode = false;
       formValues = {};
+      updateModeSwitch();
       document.querySelectorAll(".doc-type-option").forEach((button) => {
         button.classList.toggle("selected", button.dataset.docType === docType);
       });
@@ -1754,6 +2161,27 @@ html, body { margin: 0; min-height: 100%; color: #111; }
         setDocType(button.dataset.docType);
       };
     }
+
+    function updateModeSwitch() {
+      const config = currentConfig();
+      const wrapper = document.getElementById("mode-switch");
+      const button = document.getElementById("toggle-pod");
+      const hint = document.getElementById("mode-hint");
+      wrapper.hidden = !config.podToggle;
+      if (!config.podToggle) return;
+      button.textContent = state.podMode ? "POD \u2192 BOL" : "BOL \u2192 POD";
+      button.classList.toggle("active", state.podMode);
+      hint.textContent = state.podMode
+        ? "POD: signed by shipper and carrier."
+        : "Bill of lading: signature boxes are empty.";
+    }
+
+    document.getElementById("toggle-pod").addEventListener("click", () => {
+      state.podMode = !state.podMode;
+      updateModeSwitch();
+      buildForm();
+      renderPreview();
+    });
 
     document.getElementById("toggle-advanced").addEventListener("click", () => {
       showAdvanced = !showAdvanced;
@@ -1799,6 +2227,7 @@ html, body { margin: 0; min-height: 100%; color: #111; }
     });
 
     initDocTypeSelect();
+    updateModeSwitch();
     buildForm();
     renderPreview();
   </script>
